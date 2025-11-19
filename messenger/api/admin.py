@@ -1,13 +1,51 @@
 # messenger/admin.py
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from .models import UserProfile, Conversation, ConversationMember, Message, MessageAttachment
 
+# === ОТМЕНЯЕМ РЕГИСТРАЦИЮ СТАНДАРТНЫХ МОДЕЛЕЙ ===
+admin.site.unregister(User)
+admin.site.unregister(Group)
 
-# === РАСШИРЕНИЕ СТАНДАРТНОЙ МОДЕЛИ USER ===
+
+# === БАЗОВЫЙ КЛАСС С РОЛЕВЫМ ДОСТУПОМ ===
+class RoleBasedModelAdmin(admin.ModelAdmin):
+    """Базовый класс с ролевым доступом"""
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+
+        # Поддержка видит только активных пользователей и групповые чаты
+        if request.user.groups.filter(name='Поддержка мессенджера').exists():
+            if hasattr(self.model, 'user') and hasattr(self.model.user, 'is_active'):
+                return qs.filter(user__is_active=True)
+            return qs
+
+        return qs
+
+    def has_add_permission(self, request):
+        # Аналитик не может добавлять данные
+        if request.user.groups.filter(name='Аналитик мессенджера').exists():
+            return False
+        return super().has_add_permission(request)
+
+    def has_change_permission(self, request, obj=None):
+        # Аналитик и Поддержка не могут изменять данные
+        if request.user.groups.filter(name__in=['Аналитик мессенджера', 'Поддержка мессенджера']).exists():
+            return False
+        return super().has_change_permission(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        # Только модераторы и админы могут удалять
+        if request.user.groups.filter(name__in=['Поддержка мессенджера', 'Аналитик мессенджера']).exists():
+            return False
+        return super().has_delete_permission(request, obj)
+
+
+# === INLINE ДЛЯ ПРОФИЛЯ ПОЛЬЗОВАТЕЛЯ ===
 class UserProfileInline(admin.StackedInline):
     model = UserProfile
     can_delete = False
@@ -17,12 +55,23 @@ class UserProfileInline(admin.StackedInline):
     readonly_fields = ['last_seen']
 
 
+# === КАСТОМНАЯ АДМИНКА ПОЛЬЗОВАТЕЛЕЙ ===
+@admin.register(User)
 class CustomUserAdmin(UserAdmin):
     list_display = ['username', 'email', 'first_name', 'last_name', 'get_status', 'get_last_seen', 'is_staff']
     list_filter = ['is_staff', 'is_superuser', 'is_active', 'profile__status']
     search_fields = ['username', 'email', 'first_name', 'last_name', 'profile__status']
     inlines = [UserProfileInline]
     list_per_page = 50
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+
+        # Поддержка видит только активных пользователей
+        if request.user.groups.filter(name='Поддержка мессенджера').exists():
+            return qs.filter(is_active=True)
+
+        return qs
 
     def get_status(self, obj):
         return obj.profile.status if hasattr(obj, 'profile') else 'Нет профиля'
@@ -34,15 +83,22 @@ class CustomUserAdmin(UserAdmin):
 
     get_last_seen.short_description = _('Был в сети')
 
+    def has_change_permission(self, request, obj=None):
+        # Поддержка не может изменять пользователей
+        if request.user.groups.filter(name='Поддержка мессенджера').exists():
+            return False
+        return super().has_change_permission(request, obj)
 
-# Перерегистрируем User с кастомной админкой
-admin.site.unregister(User)
-admin.site.register(User, CustomUserAdmin)
+    def has_delete_permission(self, request, obj=None):
+        # Поддержка не может удалять пользователей
+        if request.user.groups.filter(name='Поддержка мессенджера').exists():
+            return False
+        return super().has_delete_permission(request, obj)
 
 
 # === МОДЕЛЬ USERPROFILE ===
 @admin.register(UserProfile)
-class UserProfileAdmin(admin.ModelAdmin):
+class UserProfileAdmin(RoleBasedModelAdmin):
     list_display = ['user', 'phone', 'status', 'last_seen', 'avatar_preview']
     list_filter = ['status', 'last_seen']
     search_fields = ['user__username', 'user__email', 'phone', 'status']
@@ -81,7 +137,7 @@ class MessageInline(admin.TabularInline):
 
 # === МОДЕЛЬ CONVERSATION ===
 @admin.register(Conversation)
-class ConversationAdmin(admin.ModelAdmin):
+class ConversationAdmin(RoleBasedModelAdmin):
     list_display = ['id', 'type', 'title', 'created_by', 'members_count', 'messages_count', 'last_message_at',
                     'created_at']
     list_filter = ['type', 'created_at', 'last_message_at']
@@ -126,7 +182,7 @@ class ConversationAdmin(admin.ModelAdmin):
 
 # === МОДЕЛЬ CONVERSATIONMEMBER ===
 @admin.register(ConversationMember)
-class ConversationMemberAdmin(admin.ModelAdmin):
+class ConversationMemberAdmin(RoleBasedModelAdmin):
     list_display = ['user', 'conversation', 'role', 'joined_at']
     list_filter = ['role', 'joined_at', 'conversation__type']
     search_fields = ['user__username', 'conversation__title']
@@ -147,7 +203,7 @@ class MessageAttachmentInline(admin.TabularInline):
 
 # === МОДЕЛЬ MESSAGE ===
 @admin.register(Message)
-class MessageAdmin(admin.ModelAdmin):
+class MessageAdmin(RoleBasedModelAdmin):
     list_display = ['id', 'conversation', 'sender', 'text_preview', 'sent_at', 'is_edited', 'attachments_count']
     list_filter = ['sent_at', 'is_edited', 'conversation__type']
     search_fields = ['text', 'sender__username', 'conversation__title']
@@ -181,7 +237,7 @@ class MessageAdmin(admin.ModelAdmin):
 
 # === МОДЕЛЬ MESSAGEATTACHMENT ===
 @admin.register(MessageAttachment)
-class MessageAttachmentAdmin(admin.ModelAdmin):
+class MessageAttachmentAdmin(RoleBasedModelAdmin):
     list_display = ['file_name', 'message', 'file_size', 'mime_type', 'uploaded_at']
     list_filter = ['mime_type', 'uploaded_at']
     search_fields = ['file_name', 'message__text', 'message__sender__username']
@@ -214,7 +270,20 @@ class MessageAttachmentAdmin(admin.ModelAdmin):
     file_preview.short_description = _('Предпросмотр')
 
 
+# === АДМИНКА ДЛЯ ГРУПП ===
+@admin.register(Group)
+class GroupAdmin(admin.ModelAdmin):
+    list_display = ['name', 'user_count']
+    filter_horizontal = ['permissions']
+    search_fields = ['name']
+
+    def user_count(self, obj):
+        return obj.user_set.count()
+
+    user_count.short_description = _('Количество пользователей')
+
+
 # === КАСТОМНЫЙ ЗАГОЛОВОК АДМИНКИ ===
-admin.site.site_header = _("Панель управления корпоративным мессенджером")
+admin.site.site_header = _("Панель управления корпоративным мессенджера")
 admin.site.site_title = _("Администрирование мессенджера")
 admin.site.index_title = _("Управление данными мессенджера")
