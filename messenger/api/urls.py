@@ -9,5 +9,5 @@ router.register(r'messages', views.MessageViewSet, basename='messages')
 router.register(r'me', views.CurrentUserViewSet, basename='current-user')
 
 urlpatterns = [
-    path('/', include(router.urls)),
+    path('', include(router.urls)),
 ]

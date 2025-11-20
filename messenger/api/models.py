@@ -9,6 +9,12 @@ class UserProfile(models.Model):
     """Профиль пользователя с дополнительными полями"""
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile', verbose_name=_('Пользователь'))
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True, verbose_name=_('Аватар'))
+    first_name = models.CharField(max_length=20, null=True, blank=True, verbose_name=_('Имя'))
+    last_name = models.CharField(max_length=20, null=True, blank=True, verbose_name=_('Фамилия'))
+    second_name = models.CharField(max_length=20, null=True, blank=True, verbose_name=_('Отчество'))
+    staff = models.CharField(max_length=30, null=True, blank=True, verbose_name=_('Должность'))
+    filial = models.CharField(max_length=30, null=True, blank=True, verbose_name=_('Филиал'))
+    email = models.CharField(max_length=20, null=True, blank=True, verbose_name=_('Почта'))
     phone = models.CharField(max_length=20, null=True, blank=True, verbose_name=_('Телефон'))
     status = models.CharField(max_length=100, default='В сети', verbose_name=_('Статус'))
     last_seen = models.DateTimeField(default=timezone.now, verbose_name=_('Был в сети'))

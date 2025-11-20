@@ -16,6 +16,11 @@ class UserSerializer(serializers.ModelSerializer):
         if profile:
             return {
                 'avatar': profile.avatar.url if profile.avatar else None,
+                'first_name': profile.first_name,
+                'last_name': profile.last_name,
+                'second_name': profile.second_name,
+                'staff': profile.staff,
+                'filial': profile.filial,
                 'phone': profile.phone,
                 'status': profile.status,
                 'last_seen': profile.last_seen
@@ -111,6 +116,11 @@ class UserSerializer(serializers.ModelSerializer):
         if profile:
             return {
                 'avatar': profile.avatar.url if profile.avatar else None,
+                'first_name': profile.first_name,
+                'last_name': profile.last_name,
+                'second_name': profile.second_name,
+                'staff': profile.staff,
+                'filial': profile.filial,
                 'phone': profile.phone,
                 'status': profile.status,
                 'last_seen': profile.last_seen
