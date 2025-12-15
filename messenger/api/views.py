@@ -9,6 +9,7 @@ from .serializers import (
     UserSerializer, ConversationSerializer,
     MessageSerializer, CreateConversationSerializer
 )
+from .utils import send_message
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
@@ -54,7 +55,8 @@ class MessageViewSet(viewsets.ModelViewSet):
         )
 
     def perform_create(self, serializer):
-        serializer.save(sender=self.request.user)
+        instance = serializer.save(sender=self.request.user)
+        send_message(instance)
 
 
 class CurrentUserViewSet(viewsets.ViewSet):

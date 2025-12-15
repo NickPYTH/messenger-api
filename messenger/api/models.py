@@ -53,12 +53,20 @@ class Conversation(models.Model):
         verbose_name = _('Беседа')
         verbose_name_plural = _('Беседы')
 
+    # messenger/models.py в классе Conversation
+
     def __str__(self):
         if self.type == self.PRIVATE:
             members = self.members.exclude(user=self.created_by)
             if members.exists():
-                return f"Чат с {members.first().user.username}"
-        return self.title or f"Группа {self.id}"
+                other_user = members.first().user
+                # Пытаемся получить имя из профиля
+                profile = getattr(other_user, 'profile', None)
+                if profile and profile.first_name and profile.last_name:
+                    return f"Чат с {profile.first_name} {profile.last_name}"
+                return f"Чат с {other_user.username}"
+            return "Личный чат"
+        return self.title or f"Групповой чат #{self.id}"
 
 
 class ConversationMember(models.Model):

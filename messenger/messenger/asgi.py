@@ -2,6 +2,8 @@ import os
 
 from django.core.asgi import get_asgi_application
 
+from api.consumers import MessagesConsumer
+
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'messenger.settings')
 
 # Инициализируем Django перед импортом middleware
@@ -19,7 +21,7 @@ application = ProtocolTypeRouter({
     "websocket": WebSocketRemoteUserMiddleware(
         AuthMiddlewareStack(
             URLRouter([
-
+                path("ws/messages/", MessagesConsumer.as_asgi()),
             ])
         )
     ),
