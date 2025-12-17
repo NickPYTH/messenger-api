@@ -1,5 +1,7 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
+from django.core.exceptions import ValidationError as DjangoValidationError
+
 
 from .models import Conversation, ConversationMember, Message, MessageAttachment
 
@@ -241,3 +243,47 @@ class CreateConversationSerializer(serializers.ModelSerializer):
                 conversation.save()
 
         return conversation
+
+
+class CreateMessageWithFilesSerializer(serializers.ModelSerializer):
+    files = serializers.ListField(
+        child=serializers.FileField(
+            max_length=100 * 1024 * 1024,
+            allow_empty_file=False
+        ),
+        write_only=True,
+        required=False
+    )
+
+    class Meta:
+        model = Message
+        fields = ['conversation', 'text', 'files']
+
+    def validate(self, data):
+        request = self.context.get('request')
+        conversation = data.get('conversation')
+        files = data.get('files', [])
+        text = data.get('text', '')
+
+        if not text and not files:
+            raise serializers.ValidationError('Сообщение должно содержать текст или файл')
+
+        return data
+
+    def create(self, validated_data):
+        files = validated_data.pop('files', [])
+
+        # ВАЖНО: sender НЕ передаем здесь
+        # Он будет передан через serializer.save(sender=request.user) в perform_create
+        message = Message.objects.create(**validated_data)
+
+        for file_obj in files:
+            MessageAttachment.objects.create(
+                message=message,
+                file=file_obj,
+                file_name=file_obj.name,
+                file_size=file_obj.size,
+                mime_type=file_obj.content_type or 'application/octet-stream'
+            )
+
+        return message
