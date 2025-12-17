@@ -141,3 +141,12 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Настройки для медиа-файлов
+MEDIA_URL = '/media/'  # URL префикс для медиа-файлов
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # Физический путь на диске
+
+# Убедись, что папка существует
+if not os.path.exists(MEDIA_ROOT):
+    os.makedirs(MEDIA_ROOT)

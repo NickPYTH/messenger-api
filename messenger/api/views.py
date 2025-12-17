@@ -7,10 +7,10 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .models import Conversation, Message
+from .models import Conversation, Message, MessageAttachment
 from .serializers import (
     UserSerializer, ConversationSerializer,
-    MessageSerializer, CreateConversationSerializer
+    MessageSerializer, CreateConversationSerializer, MessageAttachmentSerializer
 )
 from .utils import send_message
 
@@ -160,3 +160,21 @@ class CurrentUserViewSet(viewsets.ViewSet):
     def list(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
+
+
+class MessageAttachmentViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet для получения информации о вложениях
+    """
+    queryset = MessageAttachment.objects.all()
+    serializer_class = MessageAttachmentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """
+        Показываем только вложения из сообщений,
+        где пользователь является участником беседы
+        """
+        return MessageAttachment.objects.filter(
+            message__conversation__members__user=self.request.user
+        )

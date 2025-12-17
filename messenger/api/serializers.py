@@ -38,10 +38,41 @@ class ConversationMemberSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'role', 'joined_at']
 
 
+# messenger/serializers.py
+
 class MessageAttachmentSerializer(serializers.ModelSerializer):
+    file_url = serializers.SerializerMethodField()
+    file_name = serializers.CharField(read_only=True)
+
     class Meta:
         model = MessageAttachment
-        fields = ['id', 'file_name', 'file_size', 'mime_type', 'uploaded_at']
+        fields = ['id', 'file_name', 'file_size', 'mime_type',
+                  'uploaded_at', 'file_url']
+
+    def get_file_url(self, obj):
+        """
+        Возвращает полный URL для скачивания файла
+        """
+        request = self.context.get('request')
+
+        if request:
+            # Если есть request, строим абсолютный URL
+            return request.build_absolute_uri(obj.file.url)
+        else:
+            # Иначе возвращаем относительный URL
+            return obj.file.url if obj.file else None
+
+    def to_representation(self, instance):
+        """
+        Убеждаемся, что file_name всегда есть
+        """
+        data = super().to_representation(instance)
+
+        # Если file_name пустое, берем из file
+        if not data.get('file_name') and instance.file:
+            data['file_name'] = instance.file.name.split('/')[-1]
+
+        return data
 
 
 class MessageSerializer(serializers.ModelSerializer):

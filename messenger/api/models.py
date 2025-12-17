@@ -118,10 +118,12 @@ class Message(models.Model):
 
 
 class MessageAttachment(models.Model):
-    """Вложения к сообщениям"""
     message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name='attachments',
                                 verbose_name=_('Сообщение'))
-    file = models.FileField(upload_to='message_attachments/', verbose_name=_('Файл'))
+    file = models.FileField(
+        upload_to='message_attachments/%Y/%m/%d/',  # Добавляем дату в путь
+        verbose_name=_('Файл')
+    )
     file_name = models.CharField(max_length=255, verbose_name=_('Имя файла'))
     file_size = models.BigIntegerField(verbose_name=_('Размер файла'))
     mime_type = models.CharField(max_length=100, verbose_name=_('Тип файла'))
@@ -134,3 +136,16 @@ class MessageAttachment(models.Model):
 
     def __str__(self):
         return self.file_name
+
+    def save(self, *args, **kwargs):
+        # Если это новый объект и есть файл
+        if not self.pk and self.file:
+            # Сохраняем оригинальное имя файла
+            if not self.file_name:
+                self.file_name = self.file.name
+            if not self.mime_type:
+                self.mime_type = self.file.content_type or 'application/octet-stream'
+            if not self.file_size:
+                self.file_size = self.file.size
+
+        super().save(*args, **kwargs)

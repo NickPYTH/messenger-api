@@ -7,6 +7,7 @@ router.register(r'users', views.UserViewSet, basename='users')
 router.register(r'conversations', views.ConversationViewSet, basename='conversations')
 router.register(r'messages', views.MessageViewSet, basename='messages')
 router.register(r'me', views.CurrentUserViewSet, basename='current-user')
+router.register(r'attachments', views.MessageAttachmentViewSet, basename='attachments')
 
 urlpatterns = [
     path('', include(router.urls)),
