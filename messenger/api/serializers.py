@@ -45,8 +45,8 @@ class MessageAttachmentSerializer(serializers.ModelSerializer):
 class MessageSerializer(serializers.ModelSerializer):
     sender = UserSerializer(read_only=True)
     attachments = MessageAttachmentSerializer(many=True, read_only=True)
-    sent_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', required=False, allow_null=True)
-    edited_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', required=False, allow_null=True)
+    sent_at = serializers.DateTimeField(format='%d.%m.%Y %H:%M', required=False, allow_null=True)
+    edited_at = serializers.DateTimeField(format='%d.%m.%Y %H:%M', required=False, allow_null=True)
 
     class Meta:
         model = Message
@@ -79,7 +79,7 @@ class CreateConversationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Conversation
-        fields = ['type', 'title', 'member_ids']
+        fields = ['id', 'type', 'title', 'member_ids']
         extra_kwargs = {
             'title': {'required': False, 'allow_blank': True}
         }
