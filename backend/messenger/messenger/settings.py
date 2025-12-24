@@ -50,7 +50,7 @@ INSTALLED_APPS = [
 ]
 
 # Добавьте 'storages' после staticfiles
-INSTALLED_APPS.insert(INSTALLED_APPS.index('django.contrib.staticfiles') + 1, 'storages')
+# INSTALLED_APPS.insert(INSTALLED_APPS.index('django.contrib.staticfiles') + 1, 'storages')
 
 # Channels
 CHANNEL_LAYERS = {
