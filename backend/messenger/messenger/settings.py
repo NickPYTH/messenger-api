@@ -45,12 +45,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    #'storages',  # Добавлено для работы с S3/MinIO
     'api.apps.ApiConfig',
 ]
 
 # Добавьте 'storages' после staticfiles
-# INSTALLED_APPS.insert(INSTALLED_APPS.index('django.contrib.staticfiles') + 1, 'storages')
+INSTALLED_APPS.insert(INSTALLED_APPS.index('django.contrib.staticfiles') + 1, 'storages')
 
 # Channels
 CHANNEL_LAYERS = {
@@ -172,7 +171,7 @@ if not os.path.exists(MEDIA_ROOT):
 # STORAGES configuration - ВАЖНО: используем новую структуру Django 4.2+
 STORAGES = {
     "default": {
-        "BACKEND": "storages.backends.s3.S3Storage",
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
         "OPTIONS": {
             "bucket_name": MINIO_MEDIA_BUCKET_NAME,
             "access_key": MINIO_ACCESS_KEY,
