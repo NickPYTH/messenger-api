@@ -8,7 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .serializers import *
-from .utils import send_message
+from .utils import send_message, delete_message
 from .models import *
 from .serializers import (
     UserSerializer, ConversationSerializer,
@@ -162,6 +162,18 @@ class MessageViewSet(viewsets.ModelViewSet):
             import logging
             logger = logging.getLogger(__name__)
             logger.error(f"Error sending message via send_message: {str(e)}")
+
+    def perform_destroy(self, instance):
+        MessageAttachment.objects.filter(message=instance).delete()
+        # Удаляем сообщение
+        try:
+            delete_message(instance)
+        except Exception as e:
+            # Логируем ошибку, но не прерываем выполнение
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error delete message via delete_message: {str(e)}")
+        instance.delete()
 
     @action(detail=True, methods=['post'])
     def add_attachment(self, request, pk=None):

@@ -16,3 +16,11 @@ class MessagesConsumer(AsyncJsonWebsocketConsumer):
             "entity": event["data"]["entity"],
             "message": event["data"]["message"]
         })
+
+    async def message_deleted(self, event):
+
+        await self.send_json({
+            "type": "message_deleted",
+            "entity": event["data"]["entity"],
+            "message": event["data"]["message"]
+        })
