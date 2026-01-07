@@ -8,7 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .serializers import *
-from .utils import send_message, delete_message
+from .utils import send_message, delete_message, update_message
 from .models import *
 from .serializers import (
     UserSerializer, ConversationSerializer,
@@ -143,6 +143,26 @@ class MessageViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
             headers=headers
         )
+
+    def perform_update(self, serializer):
+        """
+        Обновляем сообщение и отправляем через update_message
+        """
+        instance = serializer.save(sender=self.request.user)
+        instance.is_edited = True
+        instance.edited_at = timezone.now()
+        instance.save()
+
+        # TODO Обновляем время последнего изменения сообщения в беседе
+
+        try:
+            update_message(instance)
+        except Exception as e:
+            # Логируем ошибку, но не прерываем выполнение
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error update message via update_message: {str(e)}")
+
 
     def perform_create(self, serializer):
         """

@@ -21,6 +21,23 @@ def send_message(instance=None):
         }
     )
 
+def update_message(instance=None):
+    channel_layer = get_channel_layer()
+
+    serializer = MessageSerializer(instance)
+    serialized_data = serializer.data
+
+    async_to_sync(channel_layer.group_send)(
+        "messages",
+        {
+            "type": "message.updated",
+            "data": {
+                "entity": serialized_data,
+                "message": "Updated message",
+            }
+        }
+    )
+
 
 def delete_message(instance=None):
     channel_layer = get_channel_layer()
