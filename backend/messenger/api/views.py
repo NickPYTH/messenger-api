@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.db.models import Q
 
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
@@ -6,6 +7,7 @@ from rest_framework.parsers import JSONParser
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from .serializers import *
 from .utils import send_message, delete_message, update_message
@@ -22,7 +24,28 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return User.objects.all()
+        queryset = User.objects.all()
+        search_param = self.request.query_params.get('search', None)
+
+        if search_param:
+            # Ищем по полям User и связанным полям UserProfile
+            queryset = queryset.filter(
+                Q(username__icontains=search_param) |
+                Q(email__icontains=search_param) |
+                Q(first_name__icontains=search_param) |
+                Q(last_name__icontains=search_param) |
+                # Поля из UserProfile
+                Q(profile__first_name__icontains=search_param) |
+                Q(profile__last_name__icontains=search_param) |
+                Q(profile__second_name__icontains=search_param) |
+                Q(profile__staff__icontains=search_param) |
+                Q(profile__filial__icontains=search_param) |
+                Q(profile__email__icontains=search_param) |
+                Q(profile__phone__icontains=search_param) |
+                Q(profile__status__icontains=search_param)
+            ).distinct()  # Добавляем distinct для исключения дубликатов
+
+        return queryset
 
 
 class ConversationViewSet(viewsets.ModelViewSet):
@@ -419,3 +442,11 @@ class MessageAttachmentViewSet(viewsets.ReadOnlyModelViewSet):
                 {'error': f'Ошибка при удалении файла: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class FavoritesViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserFavoritesSerializer
+
+    def get_queryset(self):
+        return UserFavorite.objects.filter(user=self.request.user)

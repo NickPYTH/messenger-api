@@ -5,7 +5,7 @@ from rest_framework import serializers
 from django.core.exceptions import ValidationError as DjangoValidationError
 
 
-from .models import Conversation, ConversationMember, Message, MessageAttachment
+from .models import Conversation, ConversationMember, Message, MessageAttachment, UserFavorite
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -467,3 +467,21 @@ class CreateMessageWithFilesSerializer(serializers.ModelSerializer):
             )
 
         return message
+
+class UserFavoritesSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    friend = UserSerializer(read_only=True)
+
+    def validate(self, data):
+        return self.initial_data
+
+    def create(self, validated_data):
+        friend = User.objects.get(id=validated_data.get('friend').get('id'))
+        favorite = UserFavorite.objects.create(user=self.context['request'].user,friend=friend)
+        return favorite
+
+    class Meta:
+        model = UserFavorite
+        fields = '__all__'
+
+

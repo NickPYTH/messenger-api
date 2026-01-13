@@ -8,7 +8,7 @@ from django.core.files.storage import default_storage
 
 class UserProfile(models.Model):
     """Профиль пользователя с дополнительными полями"""
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile', verbose_name=_('Пользователь'))
+    user = models.OneToOneField(User, on_delete=models.DO_NOTHING, related_name='profile', verbose_name=_('Пользователь'))
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True, verbose_name=_('Аватар'))
     first_name = models.CharField(max_length=20, null=True, blank=True, verbose_name=_('Имя'))
     last_name = models.CharField(max_length=20, null=True, blank=True, verbose_name=_('Фамилия'))
@@ -284,3 +284,13 @@ class MessageAttachment(models.Model):
                 return f"{size:.1f} {unit}"
             size /= 1024.0
         return f"{size:.1f} PB"
+
+
+class UserFavorite(models.Model):
+    user = models.ForeignKey(User, on_delete=models.DO_NOTHING, related_name='user', verbose_name=_('Пользователь'))
+    friend = models.ForeignKey(User, on_delete=models.DO_NOTHING, related_name='friend', verbose_name=_('Друг'))
+
+    class Meta:
+        db_table = 'users_favorites'
+        verbose_name = _('Избранный контакт')
+        verbose_name_plural = _('Избранные контакты')

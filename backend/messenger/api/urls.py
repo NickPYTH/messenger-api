@@ -5,6 +5,7 @@ from . import views
 
 router = DefaultRouter()
 router.register(r'users', views.UserViewSet, basename='users')
+router.register(r'favorites', views.FavoritesViewSet, basename='favorites')
 router.register(r'conversations', views.ConversationViewSet, basename='conversations')
 router.register(r'messages', views.MessageViewSet, basename='messages')
 router.register(r'me', views.CurrentUserViewSet, basename='current-user')
